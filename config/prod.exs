@@ -1,7 +1,7 @@
 import Config
 
 # Configure logger for production
-config :logger, level: :info
+config :logger, level: :debug
 
 # Production specific configuration
 config :hag_ex,

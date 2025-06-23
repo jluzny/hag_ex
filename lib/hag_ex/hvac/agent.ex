@@ -22,7 +22,8 @@ defmodule HagEx.Hvac.Agent do
 
   @impl true
   def handle_info(:check_temperature, state) do
-    Logger.debug("Agent triggered temperature check")
+    Logger.debug("🤖 Agent triggered temperature check")
+    Logger.debug("📊 Monitoring sensor: #{state.hvac_options.temp_sensor}")
 
     # Execute temperature monitoring action
     run_action_async(TemperatureMonitor, %{
@@ -40,15 +41,15 @@ defmodule HagEx.Hvac.Agent do
 
   @impl true
   def handle_info({:action_completed, TemperatureMonitor, result}, state) do
-    Logger.debug("Temperature monitoring completed: #{inspect(result)}")
+    Logger.debug("📊 Temperature monitoring completed")
 
     case result do
       {:ok, %{conditions_updated: true}} ->
-        # Conditions were updated, state machine will handle transitions
+        Logger.debug("✅ Conditions updated, state machine will evaluate transitions")
         :ok
 
       {:error, reason} ->
-        Logger.warning("Temperature monitoring failed: #{inspect(reason)}")
+        Logger.warning("❌ Temperature monitoring failed: #{inspect(reason)}")
 
         # Log the failure
         run_action_async(Jido.Actions.Core.Log, %{
@@ -62,17 +63,17 @@ defmodule HagEx.Hvac.Agent do
 
   @impl true
   def handle_info({:action_completed, HvacControl, result}, state) do
-    Logger.debug("HVAC control completed: #{inspect(result)}")
+    Logger.debug("🏠 HVAC control completed")
 
     case result do
       {:ok, %{all_successful: true}} ->
-        Logger.info("HVAC control successful")
+        Logger.info("✅ HVAC control successful")
 
       {:ok, %{partial_success: true}} ->
-        Logger.warning("HVAC control partially successful")
+        Logger.warning("⚠️  HVAC control partially successful")
 
       {:error, reason} ->
-        Logger.error("HVAC control failed: #{inspect(reason)}")
+        Logger.error("❌ HVAC control failed: #{inspect(reason)}")
     end
 
     {:noreply, state}
@@ -80,7 +81,7 @@ defmodule HagEx.Hvac.Agent do
 
   @impl true
   def handle_info({:temperature_signal, signal_data}, state) do
-    Logger.debug("Agent received temperature signal: #{inspect(signal_data)}")
+    Logger.debug("📡 Agent received temperature signal: #{inspect(signal_data)}")
 
     # Process temperature data through sensor data processor action
     run_action_async(SensorDataProcessor, %{

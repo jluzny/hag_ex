@@ -57,15 +57,17 @@ defmodule HagEx.Hvac.StateMachine do
 
   @impl Finitomata
   def on_transition(:initial, :initialize, _event_payload, state_payload) do
-    Logger.info("Initializing HVAC state machine")
+    Logger.info("🚀 Initializing HVAC state machine")
+    Logger.debug("🔧 System mode: #{state_payload.hvac_options.system_mode}")
+    Logger.debug("🏠 Entities configured: #{length(state_payload.hvac_options.hvac_entities)}")
     {:ok, :idle, state_payload}
   end
 
   @impl Finitomata
   def on_transition(:idle, :start_heating, _event_payload, state_payload) do
-    Logger.info(
-      "Starting heating mode: temp=#{state_payload.current_temp}°C, outdoor=#{state_payload.outdoor_temp}°C"
-    )
+    Logger.info("🔥 Starting heating mode")
+    Logger.debug("🌡️  Indoor: #{state_payload.current_temp}°C, Outdoor: #{state_payload.outdoor_temp}°C")
+    Logger.debug("🎯 Target: #{state_payload.hvac_options.heating.temperature}°C")
 
     case set_hvac_entities_mode(:heat, state_payload) do
       :ok ->
@@ -79,9 +81,9 @@ defmodule HagEx.Hvac.StateMachine do
 
   @impl Finitomata
   def on_transition(:idle, :start_cooling, _event_payload, state_payload) do
-    Logger.info(
-      "Starting cooling mode: temp=#{state_payload.current_temp}°C, outdoor=#{state_payload.outdoor_temp}°C"
-    )
+    Logger.info("❄️  Starting cooling mode")
+    Logger.debug("🌡️  Indoor: #{state_payload.current_temp}°C, Outdoor: #{state_payload.outdoor_temp}°C")
+    Logger.debug("🎯 Target: #{state_payload.hvac_options.cooling.temperature}°C")
 
     case set_hvac_entities_mode(:cool, state_payload) do
       :ok ->
@@ -95,7 +97,9 @@ defmodule HagEx.Hvac.StateMachine do
 
   @impl Finitomata
   def on_transition(:heating, :start_defrost, _event_payload, state_payload) do
-    Logger.info("Starting defrost cycle: outdoor=#{state_payload.outdoor_temp}°C")
+    Logger.info("🧊 Starting defrost cycle")
+    Logger.debug("🌡️  Outdoor: #{state_payload.outdoor_temp}°C")
+    Logger.debug("⏰ Duration: #{state_payload.hvac_options.heating.defrost.duration_seconds}s")
 
     defrost_started = DateTime.utc_now()
     updated_payload = %{state_payload | defrost_started: defrost_started}
@@ -198,10 +202,12 @@ defmodule HagEx.Hvac.StateMachine do
 
     case target_event do
       nil ->
+        Logger.debug("⏰ Timer check: no action needed in state #{current_state}")
         {:ok, state_payload}
 
       event ->
-        Logger.debug("Timer triggered event: #{event} from state #{current_state}")
+        Logger.info("⏰ Timer triggered transition: #{current_state} → #{event}")
+        Logger.debug("🌡️  Conditions: indoor=#{state_payload.current_temp}°C, outdoor=#{state_payload.outdoor_temp}°C")
         Finitomata.transition(self(), event, %{triggered_by: :timer})
         {:ok, state_payload}
     end
@@ -228,6 +234,8 @@ defmodule HagEx.Hvac.StateMachine do
   """
   @spec update_conditions(pid(), float(), float(), 0..23, boolean()) :: :ok
   def update_conditions(fsm_pid, current_temp, outdoor_temp, hour, is_weekday) do
+    Logger.debug("📊 Updating conditions: indoor=#{current_temp}°C, outdoor=#{outdoor_temp}°C, hour=#{hour}")
+    
     # Send state update to the FSM
     GenServer.cast(
       fsm_pid,

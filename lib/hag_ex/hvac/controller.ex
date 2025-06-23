@@ -56,13 +56,20 @@ defmodule HagEx.Hvac.Controller do
 
   @impl GenServer
   def init(%Config{} = config) do
-    Logger.info("Starting HVAC controller with Jido 1.2.0")
+    Logger.info("🎮 Starting HVAC controller with Jido 1.2.0")
+    Logger.debug("🔧 HVAC entities to manage: #{length(config.hvac_options.hvac_entities)}")
+    Logger.debug("🌡️  Temperature sensor: #{config.hvac_options.temp_sensor}")
+    Logger.debug("⚙️  System mode: #{config.hvac_options.system_mode}")
 
     # Start the HVAC state machine
+    Logger.debug("🔄 Starting Finitomata state machine...")
     {:ok, state_machine_pid} = start_state_machine(config.hvac_options)
+    Logger.debug("✅ State machine started with PID: #{inspect(state_machine_pid)}")
 
     # Start the Jido HVAC agent
+    Logger.debug("🤖 Starting Jido HVAC agent...")
     {:ok, hvac_agent_pid} = start_hvac_agent(config, state_machine_pid)
+    Logger.debug("✅ HVAC agent started with PID: #{inspect(hvac_agent_pid)}")
 
     state = %__MODULE__{
       config: config,
@@ -71,9 +78,10 @@ defmodule HagEx.Hvac.Controller do
     }
 
     # Schedule Home Assistant event subscription after initialization
+    Logger.debug("📅 Scheduling Home Assistant event subscription in 1 second")
     Process.send_after(self(), :subscribe_to_events, 1000)
 
-    Logger.info("HVAC controller started successfully")
+    Logger.info("✅ HVAC controller started successfully")
     {:ok, state}
   end
 
