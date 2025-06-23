@@ -152,7 +152,7 @@ defmodule HagEx.Config do
   end
 
   @spec parse_config(map()) :: {:ok, t()} | {:error, term()}
-  defp parse_config(raw_config) do
+  def parse_config(raw_config) do
     try do
       config = %__MODULE__{
         hass_options: parse_hass_options(raw_config["hass_options"]),

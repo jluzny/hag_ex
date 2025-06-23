@@ -10,18 +10,25 @@ defmodule HagEx.Application do
 
   @impl true
   def start(_type, _args) do
-    Logger.info("Starting HAG HVAC application")
+    # Check if application should start (disable for tests)
+    if Application.get_env(:hag_ex, :start_application, true) do
+      Logger.info("Starting HAG HVAC application")
 
-    # Load configuration
-    config_file = Application.get_env(:hag_ex, :config_file, "config/hvac_config.yaml")
+      # Load configuration
+      config_file = Application.get_env(:hag_ex, :config_file, "config/hvac_config.yaml")
 
-    case HagEx.Config.load(config_file) do
-      {:ok, config} ->
-        start_with_config(config)
+      case HagEx.Config.load(config_file) do
+        {:ok, config} ->
+          start_with_config(config)
 
-      {:error, reason} ->
-        Logger.error("Failed to load configuration: #{inspect(reason)}")
-        {:error, reason}
+        {:error, reason} ->
+          Logger.error("Failed to load configuration: #{inspect(reason)}")
+          {:error, reason}
+      end
+    else
+      Logger.info("HAG HVAC application startup disabled for testing")
+      # Return a minimal supervision tree for tests
+      Supervisor.start_link([], strategy: :one_for_one, name: HagEx.Supervisor)
     end
   end
 

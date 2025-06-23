@@ -1,0 +1,43 @@
+hass_options:
+  ws_url: "ws://localhost:8123/api/websocket"
+  rest_url: "http://localhost:8123"
+  token: "test_token_override_with_env"
+  max_retries: 3
+  retry_delay_ms: 500
+  state_check_interval: 300_000  # 5 minutes for testing
+
+hvac_options:
+  temp_sensor: "sensor.test_temperature"
+  system_mode: "auto"
+  
+  hvac_entities:
+    - entity_id: "climate.test_ac"
+      enabled: true
+      defrost: true
+
+  heating:
+    temperature: 21.0
+    preset_mode: "test_heat_mode"
+    temperature_thresholds:
+      indoor_min: 19.5
+      indoor_max: 20.5
+      outdoor_min: -5.0
+      outdoor_max: 10.0
+    defrost:
+      temperature_threshold: 2.0
+      period_seconds: 3600  # 1 hour for testing
+      duration_seconds: 120 # 2 minutes for testing
+
+  cooling:
+    temperature: 24.0
+    preset_mode: "test_cool_mode"
+    temperature_thresholds:
+      indoor_min: 23.0
+      indoor_max: 24.0
+      outdoor_min: 15.0
+      outdoor_max: 35.0
+
+  active_hours:
+    start: 6
+    start_weekday: 7
+    end: 22

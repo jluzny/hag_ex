@@ -17,7 +17,6 @@ defmodule HagEx.Hvac.Agent do
 
   require Logger
   alias HagEx.Hvac.Actions.{TemperatureMonitor, HvacControl, SensorDataProcessor}
-  alias HagEx.Hvac.Sensors.TemperatureSensor
 
   # No custom mount implementation - let Jido handle it
 
@@ -132,34 +131,6 @@ defmodule HagEx.Hvac.Agent do
   end
 
   # Private helper functions
-
-  defp start_temperature_sensor(state) do
-    agent_pid = self()
-
-    # Configure sensor to send signals to this agent
-    sensor_config = [
-      id: "hvac_temperature_sensor",
-      entity_id: state.hvac_options.temp_sensor,
-      poll_interval: state.check_interval,
-      threshold_delta: state.sensor_threshold,
-      outdoor_sensor: "sensor.openweathermap_temperature",
-      target:
-        {:function,
-         fn signal ->
-           send(agent_pid, {:temperature_signal, signal.data})
-         end}
-    ]
-
-    case TemperatureSensor.start_link(sensor_config) do
-      {:ok, sensor_pid} ->
-        Logger.info("Temperature sensor started: #{inspect(sensor_pid)}")
-        {:ok, sensor_pid}
-
-      {:error, reason} ->
-        Logger.error("Failed to start temperature sensor: #{inspect(reason)}")
-        {:error, reason}
-    end
-  end
 
   defp schedule_next_check(interval_ms) do
     Process.send_after(self(), :check_temperature, interval_ms)

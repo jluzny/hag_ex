@@ -265,39 +265,34 @@ defmodule HagEx.Hvac.StateMachine do
         nil
 
       {:ok, {current_state, _}} ->
-        cond do
-          not can_operate?(payload) ->
-            case current_state do
-              :heating -> :stop_heating
-              :cooling -> :stop_cooling
-              :defrost -> :complete_defrost
-              _ -> nil
-            end
-
-          need_defrost?(payload) ->
-            case current_state do
-              :heating -> :start_defrost
-              _ -> nil
-            end
-
-          should_heat?(payload) ->
-            case current_state do
-              :idle -> :start_heating
-              _ -> nil
-            end
-
-          should_cool?(payload) ->
-            case current_state do
-              :idle -> :start_cooling
-              _ -> nil
-            end
-
-          true ->
-            case current_state do
-              :heating -> :stop_heating
-              :cooling -> :stop_cooling
-              _ -> nil
-            end
+        # Check if defrost cycle should be completed based on duration
+        if current_state == :defrost and defrost_cycle_completed?(payload) do
+          # Decide whether to resume heating or go idle after defrost
+          if should_resume_heating_after_defrost?(payload) do
+            :resume_heating
+          else
+            :complete_defrost
+          end
+        else
+          # Normal state machine logic
+          active_mode = determine_active_mode(payload)
+          
+          case active_mode do
+            :heat_only ->
+              determine_heating_event(current_state, payload)
+            
+            :cool_only ->
+              determine_cooling_event(current_state, payload)
+            
+            :off ->
+              # System should be off - turn off everything
+              case current_state do
+                :heating -> :stop_heating
+                :cooling -> :stop_cooling
+                :defrost -> :complete_defrost
+                _ -> nil
+              end
+          end
         end
 
       _ ->
@@ -305,17 +300,127 @@ defmodule HagEx.Hvac.StateMachine do
     end
   end
 
-  defp can_operate?(%__MODULE__{hvac_options: hvac_opts} = payload) do
+  # Determine which mode should be active based on intelligent decision or manual config
+  defp determine_active_mode(%__MODULE__{hvac_options: hvac_opts} = payload) do
+    case hvac_opts.system_mode do
+      # Manual modes - use as configured
+      :heat_only -> :heat_only
+      :cool_only -> :cool_only
+      :off -> :off
+
+      # Auto mode - intelligent decision
+      :auto ->
+        heating_thresholds = hvac_opts.heating.temperature_thresholds
+        cooling_thresholds = hvac_opts.cooling.temperature_thresholds
+
+        # Priority 1: Check if we're in urgent need (very hot/cold)
+        cond do
+          payload.current_temp < heating_thresholds.indoor_min ->
+            # Very cold - need heating if outdoor conditions allow
+            if payload.outdoor_temp >= heating_thresholds.outdoor_min and
+               payload.outdoor_temp <= heating_thresholds.outdoor_max and
+               can_operate_hours?(payload) do
+              :heat_only
+            else
+              :off
+            end
+
+          payload.current_temp > cooling_thresholds.indoor_max ->
+            # Very hot - need cooling if outdoor conditions allow
+            if payload.outdoor_temp >= cooling_thresholds.outdoor_min and
+               payload.outdoor_temp <= cooling_thresholds.outdoor_max and
+               can_operate_hours?(payload) do
+              :cool_only
+            else
+              :off
+            end
+
+          true ->
+            # Priority 2: Use outdoor temperature to guide decision
+            heating_can_operate = payload.outdoor_temp >= heating_thresholds.outdoor_min and
+                                  payload.outdoor_temp <= heating_thresholds.outdoor_max and
+                                  can_operate_hours?(payload)
+            
+            cooling_can_operate = payload.outdoor_temp >= cooling_thresholds.outdoor_min and
+                                  payload.outdoor_temp <= cooling_thresholds.outdoor_max and
+                                  can_operate_hours?(payload)
+
+            case {heating_can_operate, cooling_can_operate} do
+              {true, true} ->
+                # Both can operate - use outdoor temperature to decide
+                mid_temp = (heating_thresholds.outdoor_max + cooling_thresholds.outdoor_min) / 2.0
+                if payload.outdoor_temp <= mid_temp do
+                  :heat_only  # Cooler weather - prefer heating
+                else
+                  :cool_only  # Warmer weather - prefer cooling
+                end
+              
+              {true, false} -> :heat_only  # Only heating can operate
+              {false, true} -> :cool_only  # Only cooling can operate
+              {false, false} -> :off       # Neither can operate
+            end
+        end
+    end
+  end
+
+  defp determine_heating_event(current_state, payload) do
+    cond do
+      not can_operate_hours?(payload) ->
+        case current_state do
+          :heating -> :stop_heating
+          :defrost -> :complete_defrost
+          _ -> nil
+        end
+
+      need_defrost?(payload) ->
+        case current_state do
+          :heating -> :start_defrost
+          _ -> nil
+        end
+
+      should_heat?(payload) ->
+        case current_state do
+          :idle -> :start_heating
+          :defrost -> nil  # Wait for defrost to complete
+          _ -> nil
+        end
+
+      true ->
+        case current_state do
+          :heating -> :stop_heating
+          _ -> nil
+        end
+    end
+  end
+
+  defp determine_cooling_event(current_state, payload) do
+    cond do
+      not can_operate_hours?(payload) ->
+        case current_state do
+          :cooling -> :stop_cooling
+          _ -> nil
+        end
+
+      should_cool?(payload) ->
+        case current_state do
+          :idle -> :start_cooling
+          _ -> nil
+        end
+
+      true ->
+        case current_state do
+          :cooling -> :stop_cooling
+          _ -> nil
+        end
+    end
+  end
+
+  defp can_operate_hours?(%__MODULE__{hvac_options: hvac_opts} = payload) do
     # Check active hours
     active_hours = hvac_opts.active_hours
-    start_hour = if payload.is_weekday, do: active_hours.start, else: active_hours.start_weekday
+    start_hour = if payload.is_weekday, do: active_hours.start_weekday, else: active_hours.start
 
-    hours_ok = payload.current_hour >= start_hour and payload.current_hour <= active_hours.end
-
-    # Check outdoor temperature (use heating limits as general operability check)
-    outdoor_ok = payload.outdoor_temp >= hvac_opts.heating.temperature_thresholds.outdoor_min
-
-    hours_ok and outdoor_ok
+    payload.current_hour >= start_hour and payload.current_hour <= active_hours.end
   end
 
   defp should_heat?(%__MODULE__{hvac_options: hvac_opts} = payload) do
@@ -461,6 +566,21 @@ defmodule HagEx.Hvac.StateMachine do
     end
   end
 
-  # Defrost completion is now handled by the timer callback
-  # which checks if defrost duration has elapsed
+  # Helper functions for defrost cycle completion and heating resumption
+  
+  defp defrost_cycle_completed?(%__MODULE__{hvac_options: hvac_opts, defrost_started: defrost_started}) do
+    case defrost_started do
+      nil -> false
+      start_time ->
+        duration_seconds = hvac_opts.heating.defrost.duration_seconds
+        DateTime.diff(DateTime.utc_now(), start_time, :second) >= duration_seconds
+    end
+  end
+  
+  defp should_resume_heating_after_defrost?(%__MODULE__{} = payload) do
+    # Resume heating if:
+    # 1. We can operate (hours and outdoor conditions allow)
+    # 2. Temperature is still too low
+    can_operate_hours?(payload) and should_heat?(payload)
+  end
 end

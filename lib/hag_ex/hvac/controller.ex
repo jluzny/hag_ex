@@ -151,7 +151,7 @@ defmodule HagEx.Hvac.Controller do
 
   defp start_hvac_agent(config, state_machine_pid) do
     # For Jido agents, pass the configuration directly
-    initial_state = %{
+    _initial_state = %{
       hvac_options: config.hvac_options,
       state_machine_pid: state_machine_pid,
       monitoring_enabled: true,
