@@ -208,23 +208,23 @@ defmodule HagEx.Hvac.StateMachine do
       event ->
         Logger.info("⏰ Timer triggered transition: #{current_state} → #{event}")
         Logger.debug("🌡️  Conditions: indoor=#{state_payload.current_temp}°C, outdoor=#{state_payload.outdoor_temp}°C")
-        Finitomata.transition(self(), event, %{triggered_by: :timer})
+        _result = Finitomata.transition(self(), event, %{triggered_by: :timer})
         {:ok, state_payload}
     end
   end
 
   # Optional: Handle entry into states
   @impl Finitomata
-  def on_enter(state, state_payload) do
+  def on_enter(state, _state_payload) do
     Logger.debug("Entered state: #{state}")
-    {:ok, state_payload}
+    :ok
   end
 
   # Optional: Handle exit from states  
   @impl Finitomata
-  def on_exit(state, state_payload) do
+  def on_exit(state, _state_payload) do
     Logger.debug("Exited state: #{state}")
-    {:ok, state_payload}
+    :ok
   end
 
   # Public API for external temperature updates
@@ -482,7 +482,10 @@ defmodule HagEx.Hvac.StateMachine do
 
     results =
       Enum.map(enabled_entities, fn entity ->
-        set_entity_mode(entity, mode, hvac_opts)
+        case set_entity_mode(entity, mode, hvac_opts) do
+          :ok -> :ok
+          {:error, _} -> :error
+        end
       end)
 
     case Enum.all?(results, &(&1 == :ok)) do
@@ -492,17 +495,17 @@ defmodule HagEx.Hvac.StateMachine do
   end
 
   defp set_entity_mode(entity, :heat, hvac_opts) do
-    with :ok <-
+    with {:ok, _} <-
            Client.call_service("climate", "set_hvac_mode", %{
              "entity_id" => entity.entity_id,
              "hvac_mode" => "heat"
            }),
-         :ok <-
+         {:ok, _} <-
            Client.call_service("climate", "set_preset_mode", %{
              "entity_id" => entity.entity_id,
              "preset_mode" => hvac_opts.heating.preset_mode
            }),
-         :ok <-
+         {:ok, _} <-
            Client.call_service("climate", "set_temperature", %{
              "entity_id" => entity.entity_id,
              "temperature" => hvac_opts.heating.temperature
@@ -516,17 +519,17 @@ defmodule HagEx.Hvac.StateMachine do
   end
 
   defp set_entity_mode(entity, :cool, hvac_opts) do
-    with :ok <-
+    with {:ok, _} <-
            Client.call_service("climate", "set_hvac_mode", %{
              "entity_id" => entity.entity_id,
              "hvac_mode" => "cool"
            }),
-         :ok <-
+         {:ok, _} <-
            Client.call_service("climate", "set_preset_mode", %{
              "entity_id" => entity.entity_id,
              "preset_mode" => hvac_opts.cooling.preset_mode
            }),
-         :ok <-
+         {:ok, _} <-
            Client.call_service("climate", "set_temperature", %{
              "entity_id" => entity.entity_id,
              "temperature" => hvac_opts.cooling.temperature
@@ -544,7 +547,7 @@ defmodule HagEx.Hvac.StateMachine do
            "entity_id" => entity.entity_id,
            "hvac_mode" => "off"
          }) do
-      :ok ->
+      {:ok, _} ->
         :ok
 
       {:error, reason} ->
@@ -562,10 +565,13 @@ defmodule HagEx.Hvac.StateMachine do
 
     results =
       Enum.map(defrost_entities, fn entity ->
-        Client.call_service("climate", "set_hvac_mode", %{
+        case Client.call_service("climate", "set_hvac_mode", %{
           "entity_id" => entity.entity_id,
           "hvac_mode" => "cool"
-        })
+        }) do
+          {:ok, _} -> :ok
+          {:error, _} -> :error
+        end
       end)
 
     case Enum.all?(results, &(&1 == :ok)) do

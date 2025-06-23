@@ -5,7 +5,7 @@ defmodule HagEx.MixProject do
     [
       app: :hag_ex,
       version: "0.1.0",
-      elixir: "~> 1.15",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       compilers: [:finitomata] ++ Mix.compilers(),
       deps: deps()
@@ -33,7 +33,7 @@ defmodule HagEx.MixProject do
 
       # HTTP and WebSocket clients
       {:websockex, "~> 0.4"},
-      {:req, "~> 0.4"},
+      {:req, "~> 0.5"},
 
       # Development and testing
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},

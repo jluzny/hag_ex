@@ -14,8 +14,8 @@ defmodule HagEx.Config do
   ]
 
   @type t :: %__MODULE__{
-          hass_options: HassOptions.t(),
-          hvac_options: HvacOptions.t()
+          hass_options: HagEx.Config.HassOptions.t(),
+          hvac_options: HagEx.Config.HvacOptions.t()
         }
 
   defmodule HassOptions do
@@ -56,10 +56,10 @@ defmodule HagEx.Config do
     @type t :: %__MODULE__{
             temp_sensor: String.t(),
             system_mode: system_mode(),
-            hvac_entities: [HvacEntity.t()],
-            heating: HeatingOptions.t(),
-            cooling: CoolingOptions.t(),
-            active_hours: ActiveHours.t()
+            hvac_entities: [HagEx.Config.HvacEntity.t()],
+            heating: HagEx.Config.HeatingOptions.t(),
+            cooling: HagEx.Config.CoolingOptions.t(),
+            active_hours: HagEx.Config.ActiveHours.t()
           }
   end
 
@@ -96,8 +96,8 @@ defmodule HagEx.Config do
     @type t :: %__MODULE__{
             temperature: float(),
             preset_mode: String.t(),
-            temperature_thresholds: TemperatureThresholds.t(),
-            defrost: DefrostOptions.t()
+            temperature_thresholds: HagEx.Config.TemperatureThresholds.t(),
+            defrost: HagEx.Config.DefrostOptions.t()
           }
   end
 
@@ -109,7 +109,7 @@ defmodule HagEx.Config do
     @type t :: %__MODULE__{
             temperature: float(),
             preset_mode: String.t(),
-            temperature_thresholds: TemperatureThresholds.t()
+            temperature_thresholds: HagEx.Config.TemperatureThresholds.t()
           }
   end
 

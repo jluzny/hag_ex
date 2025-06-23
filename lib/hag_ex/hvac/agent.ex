@@ -20,7 +20,7 @@ defmodule HagEx.Hvac.Agent do
 
   # No custom mount implementation - let Jido handle it
 
-  @impl true
+  @impl GenServer
   def handle_info(:check_temperature, state) do
     Logger.debug("🤖 Agent triggered temperature check")
     Logger.debug("📊 Monitoring sensor: #{state.hvac_options.temp_sensor}")
@@ -39,7 +39,7 @@ defmodule HagEx.Hvac.Agent do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:action_completed, TemperatureMonitor, result}, state) do
     Logger.debug("📊 Temperature monitoring completed")
 
@@ -61,7 +61,7 @@ defmodule HagEx.Hvac.Agent do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:action_completed, HvacControl, result}, state) do
     Logger.debug("🏠 HVAC control completed")
 
@@ -79,7 +79,7 @@ defmodule HagEx.Hvac.Agent do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:temperature_signal, signal_data}, state) do
     Logger.debug("📡 Agent received temperature signal: #{inspect(signal_data)}")
 
@@ -94,7 +94,7 @@ defmodule HagEx.Hvac.Agent do
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
   def handle_info({:state_machine_event, event, payload}, state) do
     Logger.debug("Received state machine event: #{event}")
 

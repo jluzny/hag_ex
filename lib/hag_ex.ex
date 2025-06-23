@@ -60,7 +60,7 @@ defmodule HagEx do
 
     %{
       config_file: config_file,
-      environment: Mix.env(),
+      environment: Application.get_env(:hag_ex, :environment, :dev),
       version: Application.spec(:hag_ex, :vsn) |> to_string()
     }
   end

@@ -63,6 +63,7 @@ defmodule HagEx.HomeAssistant.Client do
   @spec subscribe_events(pid()) :: :ok
   def subscribe_events(client_pid \\ __MODULE__) do
     WebSockex.cast(client_pid, {:subscribe_events, self()})
+    :ok
   end
 
   @doc """
