@@ -312,6 +312,12 @@ end
 - Always validate configuration on startup
 - Use meaningful error messages for configuration failures
 
+### Git Commit Guidelines
+- **NEVER mention Claude, AI, or automated generation** in commit messages
+- Focus on what was implemented and why
+- Use conventional commit format when appropriate
+- Keep messages concise and technical
+
 ## Architecture Decisions
 
 ### Why Finitomata 0.34.0?
