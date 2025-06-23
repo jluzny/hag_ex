@@ -1,0 +1,55 @@
+hass_options:
+  ws_url: "ws://192.168.0.204:8123/api/websocket"
+  rest_url: "http://192.168.0.204:8123"
+  token: "override_with_env_HASS_TOKEN"
+  max_retries: 5
+  retry_delay_ms: 1000
+  state_check_interval: 600_000  # 10 minutes in milliseconds
+
+hvac_options:
+  temp_sensor: "sensor.1st_floor_hall_multisensor_temperature"
+  system_mode: "auto"
+  
+  hvac_entities:
+    - entity_id: "climate.living_room_ac"
+      enabled: true
+      defrost: true
+    - entity_id: "climate.bedroom_ac"
+      enabled: true
+      defrost: false
+    - entity_id: "climate.matej_ac"
+      enabled: true
+      defrost: false
+    - entity_id: "climate.anicka_ac"
+      enabled: true
+      defrost: false
+    - entity_id: "climate.radek_ac"
+      enabled: true
+      defrost: false
+
+  heating:
+    temperature: 21.0
+    preset_mode: "windFreeSleep"
+    temperature_thresholds:
+      indoor_min: 19.7
+      indoor_max: 20.2
+      outdoor_min: -10.0
+      outdoor_max: 15.0
+    defrost:
+      temperature_threshold: 0.0
+      period_seconds: 7200
+      duration_seconds: 300
+
+  cooling:
+    temperature: 24.0
+    preset_mode: "windFree"
+    temperature_thresholds:
+      indoor_min: 23.0
+      indoor_max: 23.5
+      outdoor_min: 10.0
+      outdoor_max: 45.0
+
+  active_hours:
+    start: 8
+    start_weekday: 7
+    end: 20
