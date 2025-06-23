@@ -185,24 +185,20 @@ defmodule HagEx.Hvac.Actions.SensorDataProcessor do
 
   defp apply_decision(%{action: :heat} = decision, state_machine_pid, _hvac_options) do
     # Update state machine with heating request
-    case Finitomata.transition(state_machine_pid, :start_heating, %{
+    :ok = Finitomata.transition(state_machine_pid, :start_heating, %{
       target_temperature: decision.target,
       mode: decision.mode
-    }) do
-      :ok -> {:ok, :heating_requested}
-      {:error, reason} -> {:error, reason}
-    end
+    })
+    {:ok, :heating_requested}
   end
 
   defp apply_decision(%{action: :cool} = decision, state_machine_pid, _hvac_options) do
     # Update state machine with cooling request
-    case Finitomata.transition(state_machine_pid, :start_cooling, %{
+    :ok = Finitomata.transition(state_machine_pid, :start_cooling, %{
       target_temperature: decision.target,
       mode: decision.mode
-    }) do
-      :ok -> {:ok, :cooling_requested}
-      {:error, reason} -> {:error, reason}
-    end
+    })
+    {:ok, :cooling_requested}
   end
 
   defp apply_decision(%{action: :maintain}, _state_machine_pid, _hvac_options) do

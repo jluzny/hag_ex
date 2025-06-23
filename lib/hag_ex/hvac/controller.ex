@@ -109,16 +109,9 @@ defmodule HagEx.Hvac.Controller do
 
   @impl GenServer
   def handle_info(:subscribe_to_events, state) do
-    # Try to subscribe to Home Assistant events
-    case Client.subscribe_events() do
-      :ok ->
-        Logger.info("Successfully subscribed to Home Assistant events")
-
-      {:error, reason} ->
-        Logger.warning("Failed to subscribe to HA events: #{inspect(reason)}, will retry")
-        # Retry after 5 seconds
-        Process.send_after(self(), :subscribe_to_events, 5000)
-    end
+    # Subscribe to Home Assistant events
+    :ok = Client.subscribe_events()
+    Logger.info("Successfully subscribed to Home Assistant events")
 
     {:noreply, state}
   end
