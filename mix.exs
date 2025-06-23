@@ -8,6 +8,7 @@ defmodule HagEx.MixProject do
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       compilers: [:finitomata] ++ Mix.compilers(),
+      aliases: aliases(),
       deps: deps()
     ]
   end
@@ -17,6 +18,17 @@ defmodule HagEx.MixProject do
     [
       extra_applications: [:logger, :inets, :ssl],
       mod: {HagEx.Application, []}
+    ]
+  end
+
+  # Define aliases for common tasks
+  defp aliases do
+    [
+      # Run Dialyzer after compile
+      compile: ["compile", "dialyzer --format short"],
+      # Other useful aliases
+      check: ["format --check-formatted", "credo --strict", "dialyzer"],
+      "check.ci": ["format --check-formatted", "credo --strict", "dialyzer --halt-exit-status"]
     ]
   end
 

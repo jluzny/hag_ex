@@ -64,7 +64,8 @@ mix run --no-halt             # Run application
 ### Code Quality
 ```bash
 mix credo                     # Static analysis
-mix dialyzer                  # Type checking
+mix dialyzer                  # Type checking (runs automatically after compile)
+mix check                     # Run all code quality checks
 mix docs                      # Generate documentation
 mix format                    # Format code
 ```
