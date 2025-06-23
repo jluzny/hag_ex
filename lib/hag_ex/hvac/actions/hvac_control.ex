@@ -58,10 +58,11 @@ defmodule HagEx.Hvac.Actions.HvacControl do
     enabled_entities = Enum.filter(params.entities, & &1.enabled)
 
     Enum.each(enabled_entities, fn entity ->
-      Client.call_service("climate", "set_hvac_mode", %{
+      _result = Client.call_service("climate", "set_hvac_mode", %{
         "entity_id" => entity.entity_id,
         "hvac_mode" => "off"
       })
+      :ok
     end)
 
     :ok

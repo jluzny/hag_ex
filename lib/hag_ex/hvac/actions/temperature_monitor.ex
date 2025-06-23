@@ -106,6 +106,7 @@ defmodule HagEx.Hvac.Actions.TemperatureMonitor do
     {:ok, result}
   end
 
+  @spec process_direct_monitoring(map()) :: {:ok, map()} | {:error, term()}
   defp process_direct_monitoring(params) do
     Logger.debug("Using direct polling for monitoring")
 
@@ -114,7 +115,7 @@ defmodule HagEx.Hvac.Actions.TemperatureMonitor do
       now = DateTime.utc_now()
 
       # Update state machine with new conditions
-      StateMachine.update_conditions(
+      :ok = StateMachine.update_conditions(
         params.state_machine_pid,
         indoor_temp,
         outdoor_temp,
@@ -139,6 +140,7 @@ defmodule HagEx.Hvac.Actions.TemperatureMonitor do
     end
   end
 
+  @spec get_temperature(String.t()) :: {:ok, float()} | {:error, term()}
   defp get_temperature(sensor_entity) do
     case Client.get_state(sensor_entity) do
       {:ok, %{"state" => temp_str}} when is_binary(temp_str) ->

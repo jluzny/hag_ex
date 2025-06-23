@@ -201,6 +201,7 @@ defmodule HagEx.Hvac.Controller do
     end
   end
 
+  @spec process_temperature_change(map(), map()) :: :ok
   defp process_temperature_change(temp_data, state) do
     Logger.debug(
       "Processing temperature change: #{temp_data.temperature}°C at #{temp_data.hour}:xx"
@@ -211,25 +212,22 @@ defmodule HagEx.Hvac.Controller do
       {:ok, outdoor_temp} ->
         # Start state evaluation workflow
         # Direct state machine condition update (simplified approach)
-        case StateMachine.update_conditions(
-               state.state_machine_pid,
-               temp_data.temperature,
-               outdoor_temp,
-               temp_data.hour,
-               temp_data.is_weekday
-             ) do
-          :ok ->
-            Logger.debug("State machine conditions updated successfully")
-
-          {:error, reason} ->
-            Logger.error("Failed to update state machine conditions: #{inspect(reason)}")
-        end
+        :ok = StateMachine.update_conditions(
+          state.state_machine_pid,
+          temp_data.temperature,
+          outdoor_temp,
+          temp_data.hour,
+          temp_data.is_weekday
+        )
+        Logger.debug("State machine conditions updated successfully")
 
       {:error, reason} ->
         Logger.error("Failed to get outdoor temperature: #{inspect(reason)}")
     end
+    :ok
   end
 
+  @spec get_outdoor_temperature() :: {:ok, float()} | {:error, term()}
   defp get_outdoor_temperature do
     # Get outdoor temperature from Home Assistant
     case Client.get_state("sensor.openweathermap_temperature") do

@@ -37,8 +37,11 @@ defmodule HagEx.HomeAssistant.Client do
     Logger.info("🔌 Starting Home Assistant WebSocket client")
     Logger.debug("🏠 Connecting to: #{hass_options.ws_url}")
     Logger.debug("🔑 Token configured: #{String.length(hass_options.token)} chars")
-    Logger.debug("🔄 Max retries: #{hass_options.max_retries}, delay: #{hass_options.retry_delay_ms}ms")
-    
+
+    Logger.debug(
+      "🔄 Max retries: #{hass_options.max_retries}, delay: #{hass_options.retry_delay_ms}ms"
+    )
+
     state = %__MODULE__{
       hass_options: hass_options,
       message_id: 1,
@@ -46,11 +49,12 @@ defmodule HagEx.HomeAssistant.Client do
     }
 
     Logger.debug("📡 Attempting WebSocket connection...")
+
     case WebSockex.start_link(hass_options.ws_url, __MODULE__, state, name: __MODULE__) do
       {:ok, pid} ->
         Logger.debug("✅ WebSocket client started with PID: #{inspect(pid)}")
         {:ok, pid}
-      
+
       {:error, reason} ->
         Logger.error("❌ Failed to start WebSocket client: #{inspect(reason)}")
         {:error, reason}
@@ -60,7 +64,8 @@ defmodule HagEx.HomeAssistant.Client do
   @doc """
   Subscribe to Home Assistant state change events.
   """
-  @spec subscribe_events(pid()) :: :ok
+  @spec subscribe_events() :: :ok
+  @spec subscribe_events(pid() | atom()) :: :ok
   def subscribe_events(client_pid \\ __MODULE__) do
     WebSockex.cast(client_pid, {:subscribe_events, self()})
     :ok
@@ -69,7 +74,8 @@ defmodule HagEx.HomeAssistant.Client do
   @doc """
   Get current state of an entity.
   """
-  @spec get_state(String.t(), pid()) :: {:ok, map()} | {:error, term()}
+  @spec get_state(String.t()) :: {:ok, map() | nil} | {:error, term()}
+  @spec get_state(String.t(), pid() | atom()) :: {:ok, map() | nil} | {:error, term()}
   def get_state(entity_id, client_pid \\ __MODULE__) do
     send(client_pid, {:get_state_request, entity_id, self()})
 
@@ -83,7 +89,8 @@ defmodule HagEx.HomeAssistant.Client do
   @doc """
   Call a Home Assistant service.
   """
-  @spec call_service(String.t(), String.t(), map(), pid()) :: {:ok, map()} | {:error, term()}
+  @spec call_service(String.t(), String.t(), map()) :: {:ok, map() | nil} | {:error, term()}
+  @spec call_service(String.t(), String.t(), map(), pid() | atom()) :: {:ok, map() | nil} | {:error, term()}
   def call_service(domain, service, service_data, client_pid \\ __MODULE__) do
     send(client_pid, {:call_service_request, domain, service, service_data, self()})
 
@@ -105,8 +112,10 @@ defmodule HagEx.HomeAssistant.Client do
 
   @impl WebSockex
   def handle_frame({:text, msg}, state) do
-    Logger.debug("📨 Received WebSocket message: #{String.slice(msg, 0, 200)}#{if String.length(msg) > 200, do: "...", else: ""}")
-    
+    Logger.debug(
+      "📨 Received WebSocket message: #{String.slice(msg, 0, 200)}#{if String.length(msg) > 200, do: "...", else: ""}"
+    )
+
     case Jason.decode(msg) do
       {:ok, %{"type" => "auth_required"}} ->
         Logger.debug("🔐 Authentication required - sending token...")
@@ -122,7 +131,10 @@ defmodule HagEx.HomeAssistant.Client do
         {:close, state}
 
       {:ok, %{"type" => "event", "event" => event}} ->
-        Logger.debug("📡 Received event: #{event["event_type"]} for #{event["data"]["entity_id"] || "unknown"}")
+        Logger.debug(
+          "📡 Received event: #{event["event_type"]} for #{event["data"]["entity_id"] || "unknown"}"
+        )
+
         handle_event(event, state)
 
       {:ok, %{"type" => "result", "success" => true, "id" => id, "result" => result}} ->
@@ -161,7 +173,7 @@ defmodule HagEx.HomeAssistant.Client do
     Process.put({:call, state.message_id}, {from_pid, :get_state, entity_id})
 
     updated_state = %{state | message_id: state.message_id + 1}
-    {:reply, updated_state, {:text, Jason.encode!(message)}}
+    {:reply, {:text, Jason.encode!(message)}, updated_state}
   end
 
   @impl WebSockex
@@ -178,7 +190,7 @@ defmodule HagEx.HomeAssistant.Client do
     Process.put({:call, state.message_id}, {from_pid, :call_service, {domain, service}})
 
     updated_state = %{state | message_id: state.message_id + 1}
-    {:reply, updated_state, {:text, Jason.encode!(message)}}
+    {:reply, {:text, Jason.encode!(message)}, updated_state}
   end
 
   @impl WebSockex
@@ -191,6 +203,7 @@ defmodule HagEx.HomeAssistant.Client do
 
   defp authenticate(state) do
     Logger.debug("🔑 Sending authentication token to Home Assistant")
+
     auth_message = %{
       "type" => "auth",
       "access_token" => state.hass_options.token
@@ -201,6 +214,7 @@ defmodule HagEx.HomeAssistant.Client do
 
   defp subscribe_to_events(state) do
     Logger.debug("📡 Subscribing to state_changed events with ID #{state.message_id}")
+
     subscription_message = %{
       "id" => state.message_id,
       "type" => "subscribe_events",
@@ -216,10 +230,10 @@ defmodule HagEx.HomeAssistant.Client do
     entity_id = get_in(event, ["data", "entity_id"])
     new_state = get_in(event, ["data", "new_state", "state"])
     old_state = get_in(event, ["data", "old_state", "state"])
-    
+
     Logger.debug("🏠 State changed: #{entity_id} #{old_state} → #{new_state}")
     Logger.debug("📡 Broadcasting to #{length(state.subscribers)} subscribers")
-    
+
     # Broadcast state change events to subscribers
     Enum.each(state.subscribers, fn subscriber ->
       send(subscriber, {:state_changed, event})

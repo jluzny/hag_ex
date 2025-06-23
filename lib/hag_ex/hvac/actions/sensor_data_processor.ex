@@ -54,7 +54,7 @@ defmodule HagEx.Hvac.Actions.SensorDataProcessor do
     Logger.warning("Sensor data processing compensation - reverting to safe mode")
 
     # Revert to conservative HVAC settings on failure
-    HagEx.Hvac.StateMachine.update_conditions(
+    :ok = HagEx.Hvac.StateMachine.update_conditions(
       params.state_machine_pid,
       # Safe indoor temperature
       21.0,

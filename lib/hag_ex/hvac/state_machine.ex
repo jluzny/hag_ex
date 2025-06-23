@@ -232,7 +232,7 @@ defmodule HagEx.Hvac.StateMachine do
   @doc """
   Update temperature conditions and let the timer-based evaluation handle transitions.
   """
-  @spec update_conditions(pid(), float(), float(), 0..23, boolean()) :: :ok
+  @spec update_conditions(pid(), float() | nil, float() | nil, 0..23, boolean()) :: :ok
   def update_conditions(fsm_pid, current_temp, outdoor_temp, hour, is_weekday) do
     Logger.debug("📊 Updating conditions: indoor=#{current_temp}°C, outdoor=#{outdoor_temp}°C, hour=#{hour}")
     
@@ -247,6 +247,7 @@ defmodule HagEx.Hvac.StateMachine do
          is_weekday: is_weekday
        }}
     )
+    :ok
   end
 
   # Handle state updates via GenServer cast
