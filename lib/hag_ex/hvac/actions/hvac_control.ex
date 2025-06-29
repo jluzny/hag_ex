@@ -52,8 +52,9 @@ defmodule HagEx.Hvac.Actions.HvacControl do
     end
   end
 
-  def compensate(params, _context, _error) do
-    Logger.warning("HVAC control compensation - attempting to turn off all entities")
+  @impl Jido.Action
+  def on_error(params, _context, error, _opts) do
+    Logger.warning("HVAC control error: #{inspect(error)}. Attempting to turn off all entities.")
 
     enabled_entities = Enum.filter(params.entities, & &1.enabled)
 

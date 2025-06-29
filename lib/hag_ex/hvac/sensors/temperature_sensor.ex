@@ -144,17 +144,23 @@ defmodule HagEx.Hvac.Sensors.TemperatureSensor do
 
       {:ok, nil} ->
         # No signal emitted, update state directly
-        {:ok, current_temp} = get_temperature(state.entity_id)
+        case get_temperature(state.entity_id) do
+          {:ok, current_temp} ->
+            updated_state = %{
+              state
+              | last_temperature: current_temp,
+                last_outdoor_temp: get_optional_outdoor_temp(state),
+                last_reading_time: DateTime.utc_now()
+            }
 
-        updated_state = %{
-          state
-          | last_temperature: current_temp,
-            last_outdoor_temp: get_optional_outdoor_temp(state),
-            last_reading_time: DateTime.utc_now()
-        }
+            schedule_next_poll(state.poll_interval)
+            {:noreply, updated_state}
 
-        schedule_next_poll(state.poll_interval)
-        {:noreply, updated_state}
+          {:error, reason} ->
+            Logger.warning("Temperature polling failed to get current temp: #{inspect(reason)}")
+            schedule_next_poll(state.poll_interval)
+            {:noreply, state}
+        end
 
       {:error, reason} ->
         Logger.warning("Temperature polling failed: #{inspect(reason)}")

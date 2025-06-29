@@ -52,8 +52,10 @@ defmodule HagEx.Hvac.Actions.TemperatureMonitor do
     end
   end
 
-  def compensate(_params, _context, _error) do
-    Logger.warning("Temperature monitoring compensation - will retry on next cycle")
+  @impl Jido.Action
+  def on_error(params, _context, error, _opts) do
+    Logger.warning("Temperature monitoring error: #{inspect(error)}. Params: #{inspect(params)}")
+    # No specific compensation needed for this action, just log
     :ok
   end
 

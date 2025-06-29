@@ -208,8 +208,7 @@ defmodule HagEx.Hvac.StateMachine do
       event ->
         Logger.info("⏰ Timer triggered transition: #{current_state} → #{event}")
         Logger.debug("🌡️  Conditions: indoor=#{state_payload.current_temp}°C, outdoor=#{state_payload.outdoor_temp}°C")
-        _result = Finitomata.transition(self(), event, %{triggered_by: :timer})
-        {:ok, state_payload}
+        {:ok, event, state_payload}
     end
   end
 

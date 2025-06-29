@@ -22,8 +22,6 @@ defmodule HagEx.Application do
       case HagEx.Config.load(config_file) do
         {:ok, config} ->
           Logger.info("✅ Configuration loaded successfully")
-          Logger.debug("🔍 HVAC config: sensor=#{config.hvac_options.temp_sensor}, mode=#{config.hvac_options.system_mode}")
-          Logger.debug("🏠 HASS config: ws_url=#{config.hass_options.ws_url}")
           start_with_config(config)
 
         {:error, reason} ->

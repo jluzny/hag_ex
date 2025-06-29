@@ -90,7 +90,8 @@ defmodule HagEx.HomeAssistant.Client do
   Call a Home Assistant service.
   """
   @spec call_service(String.t(), String.t(), map()) :: {:ok, map() | nil} | {:error, term()}
-  @spec call_service(String.t(), String.t(), map(), pid() | atom()) :: {:ok, map() | nil} | {:error, term()}
+  @spec call_service(String.t(), String.t(), map(), pid() | atom()) ::
+          {:ok, map() | nil} | {:error, term()}
   def call_service(domain, service, service_data, client_pid \\ __MODULE__) do
     send(client_pid, {:call_service_request, domain, service, service_data, self()})
 

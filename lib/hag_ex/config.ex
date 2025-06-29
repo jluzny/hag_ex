@@ -149,7 +149,7 @@ defmodule HagEx.Config do
   def load(config_file) do
     require Logger
     Logger.debug("Loading configuration from: #{config_file}")
-    
+
     with {:ok, raw_config} <- YamlElixir.read_from_file(config_file),
          {:ok, config} <- parse_config(raw_config) do
       Logger.debug("Configuration loaded and parsed successfully")
@@ -167,14 +167,17 @@ defmodule HagEx.Config do
   def parse_config(raw_config) do
     require Logger
     Logger.debug("Parsing configuration structure")
-    
+
     try do
       hass_opts = parse_hass_options(raw_config["hass_options"])
       Logger.debug("HASS options parsed: ws_url=#{hass_opts.ws_url}")
-      
+
       hvac_opts = parse_hvac_options(raw_config["hvac_options"])
-      Logger.debug("HVAC options parsed: sensor=#{hvac_opts.temp_sensor}, mode=#{hvac_opts.system_mode}")
-      
+
+      Logger.debug(
+        "HVAC options parsed: sensor=#{hvac_opts.temp_sensor}, mode=#{hvac_opts.system_mode}"
+      )
+
       config = %__MODULE__{
         hass_options: hass_opts,
         hvac_options: hvac_opts
@@ -183,7 +186,7 @@ defmodule HagEx.Config do
       Logger.debug("Configuration structure created successfully")
       {:ok, config}
     rescue
-      error -> 
+      error ->
         Logger.error("Failed to parse configuration: #{inspect(error)}")
         {:error, error}
     end
@@ -287,10 +290,13 @@ defmodule HagEx.Config do
     # Apply environment variable overrides for sensitive data (same as Rust implementation)
     env_token = System.get_env("HASS_HassOptions__Token")
     final_token = env_token || hass_opts.token
-    
-    Logger.debug("🔐 Token source: #{if env_token, do: "environment variable HASS_HassOptions__Token", else: "config file"}")
+
+    Logger.debug(
+      "🔐 Token source: #{if env_token, do: "environment variable HASS_HassOptions__Token", else: "config file"}"
+    )
+
     Logger.debug("🔑 Token length: #{String.length(final_token)} chars")
-    
+
     updated_hass_opts = %{hass_opts | token: final_token}
 
     %{config | hass_options: updated_hass_opts}

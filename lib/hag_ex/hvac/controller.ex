@@ -121,7 +121,8 @@ defmodule HagEx.Hvac.Controller do
     # Handle Home Assistant state change events
     case extract_temperature_event(event, state.config.hvac_options.temp_sensor) do
       {:ok, temp_data} ->
-        spawn(fn -> process_temperature_change(temp_data, state) end)
+        # Send the temperature signal to the HVAC agent for processing
+        send(state.hvac_agent_pid, {:temperature_signal, temp_data})
 
       :ignore ->
         # Not a temperature sensor event we care about
@@ -186,12 +187,14 @@ defmodule HagEx.Hvac.Controller do
     with %{"data" => %{"entity_id" => entity_id, "new_state" => new_state}} <- event,
          true <- entity_id == target_sensor,
          %{"state" => temp_str} <- new_state,
-         {temp, ""} <- Float.parse(temp_str) do
+         {temp, ""} <- Float.parse(temp_str),
+         {:ok, outdoor_temp} <- get_outdoor_temperature() do
       now = DateTime.utc_now()
 
       {:ok,
        %{
          temperature: temp,
+         outdoor_temperature: outdoor_temp,
          timestamp: now,
          hour: now.hour,
          is_weekday: Date.day_of_week(now) <= 5
@@ -199,32 +202,6 @@ defmodule HagEx.Hvac.Controller do
     else
       _ -> :ignore
     end
-  end
-
-  @spec process_temperature_change(map(), map()) :: :ok
-  defp process_temperature_change(temp_data, state) do
-    Logger.debug(
-      "Processing temperature change: #{temp_data.temperature}°C at #{temp_data.hour}:xx"
-    )
-
-    # Get outdoor temperature
-    case get_outdoor_temperature() do
-      {:ok, outdoor_temp} ->
-        # Start state evaluation workflow
-        # Direct state machine condition update (simplified approach)
-        :ok = StateMachine.update_conditions(
-          state.state_machine_pid,
-          temp_data.temperature,
-          outdoor_temp,
-          temp_data.hour,
-          temp_data.is_weekday
-        )
-        Logger.debug("State machine conditions updated successfully")
-
-      {:error, reason} ->
-        Logger.error("Failed to get outdoor temperature: #{inspect(reason)}")
-    end
-    :ok
   end
 
   @spec get_outdoor_temperature() :: {:ok, float()} | {:error, term()}

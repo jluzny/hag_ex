@@ -25,7 +25,7 @@ defmodule HagEx.MixProject do
   defp aliases do
     [
       # Run Dialyzer after compile
-      compile: ["compile", "dialyzer --format short"],
+      compile: ["compile"],
       # Other useful aliases
       check: ["format --check-formatted", "credo --strict", "dialyzer"],
       "check.ci": ["format --check-formatted", "credo --strict", "dialyzer --halt-exit-status"]
