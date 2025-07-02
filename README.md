@@ -289,5 +289,5 @@ Same as original Rust implementation.
 
 - [Original Rust HAG](../hag) - The source implementation this project migrates from
 - [Finitomata](https://github.com/am-kantox/finitomata) - Finite state machine library
-- [Jido](https://github.com/civicthrottle/jido) - Workflow orchestration framework
+- [Jido](https://github.com/agentjido/jido) - Elixir AI Agent and Workflow orchestration framework
 
