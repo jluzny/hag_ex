@@ -1,5 +1,7 @@
 # HAG HVAC Control System (Elixir)
 
+This is an experimental alpha version migrating from Rust-based Hass HVAC automation to Elixir to evaluate the latest tools and frameworks in the ecosystem.
+
 An intelligent HVAC automation system for Home Assistant, implemented in Elixir using Jido workflows and Finitomata state machines.
 
 This is an Elixir migration of the original Rust-based HAG HVAC system, demonstrating superior fault tolerance and maintainability through OTP design patterns.
